@@ -296,7 +296,7 @@ else
     if ($search_categ > 0)   $sql.= " AND cp.fk_categorie = ".$search_categ;
     if ($search_categ == -2) $sql.= " AND cp.fk_categorie IS NULL";
     if ($fourn_id > 0) $sql.= " AND pfp.fk_soc = ".$fourn_id;
-    $sql.= " GROUP BY p.rowid, p.ref, p.label, p.barcode, p.price, p.price_ttc, p.price_base_type,";
+    $sql.= " GROUP BY p.rowid, p.ref, p.label, p.barcode, p.price, p.price_ttc, p.price_base_type,d.rowid,";
     $sql.= " p.fk_product_type, p.tms,";
     $sql.= " p.duration, p.tosell, p.tobuy, p.seuil_stock_alerte";
     //if (GETPOST("toolowstock")) $sql.= " HAVING SUM(s.reel) < p.seuil_stock_alerte";    // Not used yet
@@ -765,11 +765,25 @@ else
 }
 ?>
 <script type="text/javascript">
-function quickEditProduct(fk_product) {
+$(document).ready(function(){
+    if($('#quickEditProduct').length==0) {
+    	$('body').append('<div id="quickEditProduct" title="Edition rapide"></div>');
+    }
 
-	if($('#quickEditProduct').length==0) {
-		$('body').append('<div id="quickEditProduct" title="Edition rapide"></div>');
-	}
+    oneClick();
+});
+
+// fix un bug de sortie de l'iframe CKEDITOR
+// Bug : Au focusout, l'iframe redonnait toujours le focus au dernier document.activeelement quelque soit la cible du clic
+function oneClick(){
+	$('#quickEditProduct').one('click', function(e){
+		console.log(e.target);
+		e.target.focus();
+		oneClick();
+	});
+}
+
+function quickEditProduct(fk_product) {
 
 	$.get("<?php 
 	   if((float)DOL_VERSION<=3.6) echo dol_buildpath('/product/fiche.php?action=edit&id=',1);
@@ -783,6 +797,8 @@ function quickEditProduct(fk_product) {
 		$('#quickEditProduct input[name=cancel]').remove();
 
 		$('#quickEditProduct form').submit(function() {
+			//fix dans la popin, CKEDITOR ne remplissait pas le champ de #desc avant de l'envoyer
+			$('#desc').val($('#cke_desc iframe').contents().find('body').html());
 
 			$.post($(this).attr('action'), $( this ).serialize(), function() {
 
